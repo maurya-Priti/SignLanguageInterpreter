@@ -1,6 +1,6 @@
 Flask
 gunicorn
 mediapipe
-sckit-learn
+scikit-learn
 pandas
 opencv-python
