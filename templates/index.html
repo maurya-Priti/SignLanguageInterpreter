@@ -1,0 +1,88 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Interpreter</title>
+   <style>
+     #video {
+            display: block;
+        }
+   </style>
+</head>
+<body>
+    <header>
+        <h1>Sign Language Interpreter</h1>
+    </header>
+    <main><div class="home-container">
+        <h1>ASL</h1>
+
+    
+        <div class="camera-container">
+            <button id="startButton">Start</button>
+            <button id="stopButton">Stop</button>
+            <video id="video" width="640" height="480" autoplay style="display: none;"></video>
+            <canvas id="canvasOutput" width="640" height="480"></canvas>
+
+        </div>
+    </div> 
+    </main>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+            let video = document.getElementById("video");
+            let canvas = document.getElementById("canvasOutput");
+
+            let context = canvas.getContext("2d");
+            let intervalId;
+
+            $('#startButton').click(function() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    intervalId = setInterval(sendFrame, 200); // Send frames every 200ms
+                })
+                .catch(err => {
+                    console.error('Error accessing the camera', err);
+                });
+        });
+
+        $('#stopButton').click(function() {
+            clearInterval(intervalId);
+            let stream = video.srcObject;
+            let tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+            document.getElementById("canvasOutput").style.display="none"
+
+        });
+
+
+
+        function sendFrame() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let dataURL = canvas.toDataURL('image/jpeg', 1); // Compress the image
+
+            $.ajax({
+                type: "POST",
+                url: "/process_frame",
+                data: { frame_data: dataURL },
+                success: function(response) {
+                    let img = new Image();
+                    img.src = 'data:image/jpeg;base64,' + response.image_data;
+                    img.onload = function() {
+                        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error sending frame:', error);
+                }
+            });
+        }
+
+    </script>
+
+</body>
+</html>
